@@ -13,7 +13,7 @@ const Navbar = () => {
     <nav className="bg-gray-950 text-white flex justify-between px-4 items-center h-13">
 
       <Link className="logo font-bold text-lg flex jusify-center items-center" href={"/"}>
-        <Image src="/tea.gif" alt="tea" width={44} height={44} />
+        <Image className="invertImg" src="/tea.gif" alt="tea" width={44} height={44} />
         <span className='cursor-pointer'>
           Get Me a Chai! </span>
       </Link>
@@ -34,7 +34,7 @@ const Navbar = () => {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Your Page
+                <Link href={`/${session.user.name}`} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Your Page
                 </Link>
               </li>
             </ul>
