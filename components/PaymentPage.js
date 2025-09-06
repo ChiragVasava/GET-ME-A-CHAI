@@ -4,30 +4,39 @@ import React, { useEffect, useState } from 'react'
 import Script from 'next/script'
 import { useSession } from 'next-auth/react'
 import { fetchuser, fetchpayments, initiate } from '@/actions/useractions'
-// import { useSearchParams, useRouter, notFound } from 'next/navigation'
+import { useSearchParams, useRouter, notFound } from 'next/navigation'
 import Image from 'next/image'
-
-
-// import { ToastContainer, toast } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
-// import { Bounce } from 'react-toastify';
-// import { notFound } from "next/navigation"
-
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PaymentPage = ({ username }) => {
     const { data: session } = useSession()
 
-    const [paymentform, setPaymentform] = useState({})
-
+    const [paymentform, setPaymentform] = useState({ name: "", message: "", amount: "" })
     const [currentUser, setcurrentUser] = useState({})
     const [payments, setPayments] = useState([])
-
-    // const [scriptLoaded, setScriptLoaded] = useState(false)
-    // const searchParams = useSearchParams()
-    // const router = useRouter()
+    const searchParams = useSearchParams()
+    const router = useRouter()
 
     useEffect(() => {
         getData()
+    }, [])
+
+    useEffect(() => {
+        if (searchParams.get("paymentdone") == "true") {
+            toast('Thanks For Your Donation 💸', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "dark",
+                transition: Bounce,
+            });
+        }
+        router.push(`/${username}`)
     }, [])
 
     const handleChange = (e) => {
@@ -42,40 +51,22 @@ const PaymentPage = ({ username }) => {
         console.log(u, dbpayments)
     }
 
-    // If user is not found, show 404 page
-    //     if (!u) {
-    //         notFound()
-    //         return
-    //     }
-    // }
-
     const pay = async (amount) => {
-        // Check if Razorpay script is loaded
-        // if (typeof window !== 'undefined' && !window.Razorpay) {
-        //     alert('Payment gateway is still loading. Please try again in a moment.')
-        //     return
-        // }
-
-        // Get the order Id
-        // Create a new instance of Razzorpay
         let a = await initiate(amount, username, paymentform)
         let orderId = a.id
         let options = {
-            // "key": process.env.KEY_ID, // Enter the Key ID generated from the Dashboard
-            "key": process.env.NEXT_PUBLIC_KEY_ID,
-            "amount": amount, // Amount is in currency subunits. 
+            "key": currentUser.razorpayid,
+            "amount": amount,
             "currency": "INR",
-            "name": "Get ME A Chai", //your business name
+            "name": "Get ME A Chai",
             "description": "Test Transaction",
             "image": "https://example.com/your_logo",
-            "order_id": orderId, // This is a sample Order ID. Pass the `id` obtained in the response of Step 1
-            // "callback_url": `${process.env.URL}/api/razorpay`,
+            "order_id": orderId,
             "callback_url": `${process.env.NEXT_PUBLIC_URL}/api/razorpay`,
-            "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information especially their phone number
-                "name": "Chirag Vasava", //your customer's name
+            "prefill": {
+                "name": "Chirag Vasava",
                 "email": "v.chira.007@gmail.com",
                 "contact": "1234567890"
-                //Provide the customer's phone number for better conversion rates 
             },
             "notes": {
                 "address": "Razorpay Corporate Office"
@@ -95,98 +86,189 @@ const PaymentPage = ({ username }) => {
 
     return (
         <>
-            <Script
-                src="https://checkout.razorpay.com/v1/checkout.js"
-            // onLoad={() => {
-            //     console.log('Razorpay script loaded')
-            //     setScriptLoaded(true)
-            // }}
-            // onError={() => {
-            //     console.error('Failed to load Razorpay script')
-            //     alert('Failed to load payment gateway. Please refresh the page.')
-            // }}
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick={false}
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
             />
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
-
-            <div className="justify-center items-center flex flex-col min-h-screen text-white">
-                {/* Cover section */}
-                <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px]">
+            <div className="min-h-screen bg-gray-900 text-white">
+                {/* Cover Section */}
+                <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 xl:h-[400px]">
                     {/* Cover Image */}
-                    <Image
-                        src="/Drink Cover.png" // from public folder
-                        alt="Tea Goblin Cafe"
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-
-                    {/* Black Goblin Avatar */}
-                    <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 border-4 border-white rounded-full bg-black">
+                    {currentUser.coverpic ? (
                         <Image
-                            src="/Drink Profile.jpg" // from public folder
-                            alt="Goblin Avatar"
-                            width={150}
-                            height={150}
-                            className="rounded-full"
+                            src={currentUser.coverpic}
+                            alt="User Coverpic"
+                            fill
+                            className="object-cover"
+                            priority
                         />
+                    ) : (
+                        <Image
+                            src="/Fallback Cover.png"
+                            alt="Fallback Cover"
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                    )}
+
+                    {/* Profile Avatar */}
+                    <div className="absolute -bottom-8 sm:-bottom-12 md:-bottom-16 left-1/2 transform -translate-x-1/2 border-2 sm:border-4 border-white rounded-full bg-black">
+                        {currentUser.profilepic ? (
+                            <Image
+                                src={currentUser.profilepic}
+                                alt="User Avatar"
+                                width={64}
+                                height={64}
+                                className="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full object-cover"
+                            />
+                        ) : (
+                            <Image
+                                src="/Fallback Profile.png"
+                                alt="Fallback Avatar"
+                                width={64}
+                                height={64}
+                                className="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full object-cover"
+                            />
+                        )}
                     </div>
                 </div>
 
                 {/* Profile Info Section */}
-                <div className="mt-20 flex flex-col items-center text-center px-4">
-                    <h1 className="text-2xl font-bold">
-                        @{username}</h1>
-                    <p className="text-slate-400">Creating Animated art for VTTs</p>
-                    <p className="text-slate-400">
-                        9,719 members · 82 posts · $15,450/release
+                <div className="mt-12 sm:mt-16 md:mt-20 lg:mt-24 flex flex-col items-center text-center px-4 sm:px-6">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
+                        @{username}
+                    </h1>
+                    <p className="text-slate-400 text-sm sm:text-base mb-1">
+                        Lets help {username} get a chai!
+                    </p>
+                    <p className="text-slate-400 text-sm sm:text-base">
+                        {payments.length} Payments · ₹{payments.reduce((a, b) => a + b.amount, 0)} raised
                     </p>
                 </div>
 
-                <br />
-
-                <div className="payment flex gap-3 w-[80%] mt-11">
-                    <div className="supporters w-1/2 bg-slate-900 rounded-lg text-white p-7">
-
-                        {/* SHows list of all the supportes as a leaderboard */}
-                        <h2 className="text-2xl font-bold my-5">Supporters</h2>
-
-                        <ul className="mx-5 text-lg">
-                            {payments.map((p, i) => {
-                                return <li key={i} className="my-4 flex gap-2 items-center">
-                                    <Image width={33} height={33} src="/avatar.gif" alt="user avatar" />
-                                    <span>
-                                        {p.name} donated <span className='font-bold'>₹{p.amount / 100}</span> with a message &quot;{p.message}&quot;
-                                    </span>
-                                </li>
-                            })}
-                        </ul>
-                    </div>
-
-                    <div className="makePayment w-1/2 bg-slate-900 rounded-lg text-white p-10">
-                        <h2 className="text-2xl font-bold my-5">Make a Payment</h2>
-                        <div className="flex gap-2 flex-col">
-
-                            {/* input for name and message */}
-                            <input onChange={handleChange} value={paymentform.name} name='name' type="text" className="w-full p-3 rounded-lg bg-slate-800" placeholder="Enter Name" />
-
-                            <input onChange={handleChange} value={paymentform.message} name='message' type="text" className="w-full p-3 rounded-lg bg-slate-800" placeholder="Enter Message" />
-
-                            <input onChange={handleChange} value={paymentform.amount} name='amount' type="text" className="w-full p-3 rounded-lg bg-slate-800" placeholder="Enter Amount" />
-
-                            <button onClick={() => pay(Number.parseInt(paymentform.amount) * 100)} type="button" className="text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm p-3 px-5 py-2.5 text-center me-2 mb-2 cursor-pointer">Pay
-                            </button>
-
+                {/* Payment Section */}
+                <div className="mt-8 sm:mt-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8">
+                    <div className="flex flex-col xl:flex-row gap-4 sm:gap-6">
+                        
+                        {/* Supporters Section */}
+                        <div className="w-full xl:w-1/2 bg-slate-900 rounded-lg p-4 sm:p-6 md:p-8">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Top 10 Supporters</h2>
+                            
+                            <div className="space-y-3 sm:space-y-4">
+                                {payments.length == 0 && (
+                                    <div className="text-slate-400 text-center py-8">
+                                        <p>No Payments yet</p>
+                                        <p className="text-sm mt-2">Be the first to support!</p>
+                                    </div>
+                                )}
+                                
+                                {payments.slice(0, 10).map((p, i) => (
+                                    <div key={i} className="flex gap-3 items-start bg-slate-800 rounded-lg p-3 sm:p-4">
+                                        <Image 
+                                            width={32} 
+                                            height={32} 
+                                            src="/avatar.gif" 
+                                            alt="user avatar"
+                                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 mt-1"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm sm:text-base break-words">
+                                                <span className="font-semibold text-white">{p.name}</span>
+                                                <span className="text-slate-300"> donated </span>
+                                                <span className="font-bold text-green-400">₹{p.amount}</span>
+                                            </p>
+                                            <p className="text-xs sm:text-sm text-slate-400 mt-1 break-words">
+                                                &quot;{p.message}&quot;
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        {/* or choose from these amounts */}
-                        <div className="flex gap-2 mt-5">
-                            <button className="bg-slate-800 p-3 rounded-lg cursor-pointer" onClick={() => pay(1000)}>Pay ₹10</button>
-                            <button className="bg-slate-800 p-3 rounded-lg cursor-pointer" onClick={() => pay(2000)}>Pay ₹20</button>
-                            <button className="bg-slate-800 p-3 rounded-lg cursor-pointer" onClick={() => pay(3000)}>Pay ₹30</button>
+
+                        {/* Make Payment Section */}
+                        <div className="w-full xl:w-1/2 bg-slate-900 rounded-lg p-4 sm:p-6 md:p-8">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Make a Payment</h2>
+                            
+                            <div className="space-y-4">
+                                {/* Form Inputs */}
+                                <input 
+                                    onChange={handleChange} 
+                                    value={paymentform.name} 
+                                    name='name' 
+                                    type="text" 
+                                    className="w-full p-3 sm:p-4 rounded-lg bg-slate-800 text-white placeholder-slate-400 text-sm sm:text-base border border-slate-700 focus:border-blue-500 focus:outline-none transition-colors" 
+                                    placeholder="Enter Name" 
+                                />
+
+                                <textarea 
+                                    onChange={handleChange} 
+                                    value={paymentform.message} 
+                                    name='message' 
+                                    rows="3"
+                                    className="w-full p-3 sm:p-4 rounded-lg bg-slate-800 text-white placeholder-slate-400 text-sm sm:text-base border border-slate-700 focus:border-blue-500 focus:outline-none transition-colors resize-none" 
+                                    placeholder="Enter Message" 
+                                />
+
+                                <input 
+                                    onChange={handleChange} 
+                                    value={paymentform.amount} 
+                                    name='amount' 
+                                    type="number" 
+                                    min="1"
+                                    className="w-full p-3 sm:p-4 rounded-lg bg-slate-800 text-white placeholder-slate-400 text-sm sm:text-base border border-slate-700 focus:border-blue-500 focus:outline-none transition-colors" 
+                                    placeholder="Enter Amount (₹)" 
+                                />
+
+                                <button 
+                                    onClick={() => pay(Number.parseInt(paymentform.amount) * 100)} 
+                                    type="button" 
+                                    className="cursor-pointer w-full text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm sm:text-base p-3 sm:p-4 text-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={paymentform.name?.length < 3 || paymentform.message?.length < 4 || paymentform.amount?.length < 1}
+                                >
+                                    Pay ₹{paymentform.amount || '0'}
+                                </button>
+                            </div>
+
+                            {/* Quick Payment Options */}
+                            <div className="mt-6">
+                                <p className="text-slate-400 text-sm mb-3">Or choose from these amounts:</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                                    <button 
+                                        className="bg-slate-800 hover:bg-slate-700 p-3 sm:p-4 rounded-lg cursor-pointer transition-colors text-sm sm:text-base font-medium border border-slate-700 hover:border-slate-600" 
+                                        onClick={() => pay(1000)}
+                                    >
+                                        Pay ₹10
+                                    </button>
+                                    <button 
+                                        className="bg-slate-800 hover:bg-slate-700 p-3 sm:p-4 rounded-lg cursor-pointer transition-colors text-sm sm:text-base font-medium border border-slate-700 hover:border-slate-600" 
+                                        onClick={() => pay(2000)}
+                                    >
+                                        Pay ₹20
+                                    </button>
+                                    <button 
+                                        className="bg-slate-800 hover:bg-slate-700 p-3 sm:p-4 rounded-lg cursor-pointer transition-colors text-sm sm:text-base font-medium border border-slate-700 hover:border-slate-600" 
+                                        onClick={() => pay(3000)}
+                                    >
+                                        Pay ₹30
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
         </>
     )
 }

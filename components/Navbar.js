@@ -10,15 +10,17 @@ const Navbar = () => {
 
 
   return (
-    <nav className="bg-gray-950 text-white flex justify-between px-4 items-center h-13">
+
+    <nav className="bg-gray-950 text-white flex justify-between items-center px-4 md:h-16 flex-col md:flex-row">
+
 
       <Link className="logo font-bold text-lg flex jusify-center items-center" href={"/"}>
         <Image className="invertImg" src="/tea.gif" alt="tea" width={44} height={44} />
-        <span className='cursor-pointer'>
+        <span className='text-xl md:text-base my-3 md:my-0'>
           Get Me a Chai! </span>
       </Link>
 
-      <div className="relative">
+      <div className="relative flex flex-col md:block gap-4">
         {session && <>
           <button onClick={() => { setShowdropdown(!showdropdown) }} onBlur={() => { setTimeout(() => { setShowdropdown(false) }, 300); }}
             id="dropdownDefaultButton" data-dropdown-toggle="dropdown" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm mx-4 px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">Welcome {session.user.name}

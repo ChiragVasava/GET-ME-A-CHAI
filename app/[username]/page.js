@@ -1,20 +1,35 @@
-"use client"
-
-import React from 'react'
 import PaymentPage from '@/components/PaymentPage'
-import { useRouter } from 'next/navigation'
+import { notFound } from 'next/navigation'
+import dbConnect from '@/lib/db'
+import User from '@/models/User'
 
-const UsernamePage = ({ params }) => {
-  const router = useRouter()
-  const { username } = React.use(params) // ✅ unwrap the promise
+
+const UsernamePage = async ({ params }) => {
+
+  // if the username is not present in the database, show a 404 page
+  const checkUser = async () => {
+
+    await dbConnect()
+
+    let u = await User.findOne({ username: params.username })
+
+    if (!u) {
+      return notFound()
+    }
+  }
+  await checkUser()
 
   return (
     <div>
-      <h1>User Profile: {username}</h1>
-      <button onClick={() => router.push('/')}>Go Home</button>
-      <PaymentPage username={username} />
+      <PaymentPage username={params.username} />
     </div>
   )
 }
-
 export default UsernamePage
+
+// or Dynamic metadata
+export async function generateMetadata({ params }) {
+  return {
+    title: 'Support ${params.username} - Get Me A Chai',
+  }
+}

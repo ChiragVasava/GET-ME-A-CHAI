@@ -1,37 +1,81 @@
-import { NextResponse } from "next/server";
-import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils";
-import Payment from "@/models/Payment";
-import Razorpay from "razorpay";
-import dbConnect from "@/lib/db";
-import User from "@/models/User";
+"use server"
 
+import Razorpay from "razorpay"
+import Payment from "@/models/Payment"
+import dbConnect from "@/lib/db"
+import User from "@/models/User"
 
-export const POST = async (req) => {
+export const initiate = async (amount, to_username, paymentform) => {
     await dbConnect()
-    let body = await req.formData()
-    body = Object.fromEntries(body)
 
-    // Check if razorpayOrderId is present on the server
-    let p = await Payment.findOne({oid: body.razorpay_order_id})
-    if(!p){
-        return NextResponse.json({success: false, message:"Order Id not found"})
-    }
+    // fetch the secret of the user who is getting the payment
+    let user = await User.findOne({ username: to_username }).lean()
+    if (!user) throw new Error("User not found")
 
-    // fetch the secret of the user who is getting the payment 
-    let user = await User.findOne({username: p.to_user})
     const secret = user.razorpaysecret
+    let instance = new Razorpay({ key_id: user.razorpayid, key_secret: secret })
 
-    // Verify the payment
-    let xx = validatePaymentVerification({"order_id": body.razorpay_order_id, "payment_id": body.razorpay_payment_id}, body.razorpay_signature, process.env.KEY_SECRET)
-
-    if(xx){
-        // Update the payment status
-        const updatedPayment = await Payment.findOneAndUpdate({oid: body.razorpay_order_id}, {done: "true"}, {new: true})
-        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_URL}/${updatedPayment.to_user}?paymentdone=true`)  
+    let options = {
+        amount: Number.parseInt(amount),
+        currency: "INR",
     }
 
-    else{
-        return NextResponse.json({success: false, message:"Payment Verification Failed"})
+    let x = await instance.orders.create(options)
+
+    // create a payment object which shows a pending payment in the  database
+    await Payment.create({
+        oid: x.id,
+        amount: amount / 100,
+        to_user: to_username,
+        name: paymentform.name,
+        message: paymentform.message,
+    })
+
+    return x
+}
+
+export const fetchuser = async (username) => {
+    await dbConnect()
+    let u = await User.findOne({ username }).lean()
+    if (!u) return null
+
+    return {
+        ...u,
+        _id: u._id.toString(),
+        createdAt: u.createdAt?.toISOString(),
+        updatedAt: u.updatedAt?.toISOString(),
+    }
+}
+
+export const fetchpayments = async (username) => {
+    await dbConnect()
+    let payments = await Payment.find({ to_user: username, done: true })
+        .sort({ amount: -1 })
+        .limit(10)
+        .lean()
+
+    return payments.map((p) => ({
+        ...p,
+        _id: p._id.toString(),
+        createdAt: p.createdAt?.toISOString(),
+        updatedAt: p.updatedAt?.toISOString(),
+    }))
+}
+
+export const updateProfile = async (data, oldusername) => {
+    await dbConnect()
+    let ndata = Object.fromEntries(data)
+
+    if (oldusername !== ndata.username) {
+        let u = await User.findOne({ username: ndata.username })
+        if (u) {
+            return { error: "Username already exists" }
+        }
+        await User.updateOne({ email: ndata.email }, ndata)
+        await Payment.updateMany({ to_user: oldusername }, { to_user: ndata.username })
+    } else {
+        await User.updateOne({ email: ndata.email }, ndata)
     }
 
+    return { success: true }
 }
