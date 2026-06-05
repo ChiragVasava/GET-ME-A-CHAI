@@ -1,12 +1,12 @@
 import NextAuth from "next-auth";
 import User from '@/models/User';
 import dbConnect from '@/lib/db';
+import GithubProvider from "next-auth/providers/github";
 import EmailProvider from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
 import LinkedInProvider from "next-auth/providers/linkedin";
 import TwitterProvider from "next-auth/providers/twitter";
 import FacebookProvider from "next-auth/providers/facebook";
-import GithubProvider from "next-auth/providers/github";
 import AppleProvider from "next-auth/providers/apple";
 
 
