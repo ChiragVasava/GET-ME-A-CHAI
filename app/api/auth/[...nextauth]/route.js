@@ -2,52 +2,73 @@ import NextAuth from "next-auth";
 import User from '@/models/User';
 import dbConnect from '@/lib/db';
 import GithubProvider from "next-auth/providers/github";
-import EmailProvider from "next-auth/providers/email";
-import GoogleProvider from "next-auth/providers/google";
-import LinkedInProvider from "next-auth/providers/linkedin";
-import TwitterProvider from "next-auth/providers/twitter";
-import FacebookProvider from "next-auth/providers/facebook";
-import AppleProvider from "next-auth/providers/apple";
 
+// Build providers array — only include providers with real credentials
+const providers = [];
+
+// GitHub — primary provider
+if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+  const GithubProvider = require("next-auth/providers/github").default;
+  providers.push(GithubProvider({
+    clientId: process.env.GITHUB_ID,
+    clientSecret: process.env.GITHUB_SECRET,
+  }));
+}
+
+// Google — add credentials in Vercel env vars to enable
+if (process.env.GOOGLE_ID && process.env.GOOGLE_SECRET) {
+  const GoogleProvider = require("next-auth/providers/google").default;
+  providers.push(GoogleProvider({
+    clientId: process.env.GOOGLE_ID,
+    clientSecret: process.env.GOOGLE_SECRET,
+  }));
+}
+
+// LinkedIn — add credentials in Vercel env vars to enable
+if (process.env.LINKEDIN_ID && process.env.LINKEDIN_SECRET) {
+  const LinkedInProvider = require("next-auth/providers/linkedin").default;
+  providers.push(LinkedInProvider({
+    clientId: process.env.LINKEDIN_ID,
+    clientSecret: process.env.LINKEDIN_SECRET,
+  }));
+}
+
+// Twitter — add credentials in Vercel env vars to enable
+if (process.env.TWITTER_ID && process.env.TWITTER_SECRET) {
+  const TwitterProvider = require("next-auth/providers/twitter").default;
+  providers.push(TwitterProvider({
+    clientId: process.env.TWITTER_ID,
+    clientSecret: process.env.TWITTER_SECRET,
+  }));
+}
+
+// Facebook — add credentials in Vercel env vars to enable
+if (process.env.FACEBOOK_ID && process.env.FACEBOOK_SECRET) {
+  const FacebookProvider = require("next-auth/providers/facebook").default;
+  providers.push(FacebookProvider({
+    clientId: process.env.FACEBOOK_ID,
+    clientSecret: process.env.FACEBOOK_SECRET,
+  }));
+}
+
+// Email — add SMTP credentials in Vercel env vars to enable
+if (process.env.EMAIL_SERVER_HOST && process.env.EMAIL_FROM) {
+  const EmailProvider = require("next-auth/providers/email").default;
+  providers.push(EmailProvider({
+    server: {
+      host: process.env.EMAIL_SERVER_HOST,
+      port: process.env.EMAIL_SERVER_PORT,
+      auth: {
+        user: process.env.EMAIL_SERVER_USER,
+        pass: process.env.EMAIL_SERVER_PASSWORD,
+      },
+    },
+    from: process.env.EMAIL_FROM,
+  }));
+}
 
 export const authOptions = {
-  providers: [
-    GithubProvider({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_SECRET,
-    }),
-    LinkedInProvider({
-      clientId: process.env.LINKEDIN_ID,
-      clientSecret: process.env.LINKEDIN_SECRET,
-    }),
-    TwitterProvider({
-      clientId: process.env.TWITTER_ID,
-      clientSecret: process.env.TWITTER_SECRET,
-    }),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_ID,
-      clientSecret: process.env.FACEBOOK_SECRET,
-    }),
-    AppleProvider({
-      clientId: process.env.APPLE_ID,
-      clientSecret: process.env.APPLE_SECRET,
-    }),
-    EmailProvider({
-      server: {
-        host: process.env.EMAIL_SERVER_HOST,
-        port: process.env.EMAIL_SERVER_PORT,
-        auth: {
-          user: process.env.EMAIL_SERVER_USER,
-          pass: process.env.EMAIL_SERVER_PASSWORD,
-        },
-      },
-      from: process.env.EMAIL_FROM,
-    }),
-  ],
+  providers,
   callbacks: {
     async signIn({ user, account }) {
       await dbConnect();
